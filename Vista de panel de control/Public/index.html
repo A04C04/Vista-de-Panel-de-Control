@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./Img/TugoLogo.png" type="image/png">
+    <title>Panel de Control de Estudiante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script> 
+    <style>
+        /* assets/css/style.css: Colores base y diseño general */
+        :root {
+        --sidebar-width: 280px;
+        /* NUEVOS COLORES BASADOS EN TU PALETA */
+        --primary-color: #023047; /* Azul Oscuro (Fondo de tu imagen/Barra lateral) */
+        --primary-light: #219EBC; /* Azul Secundario (Acentos/Hover) */
+        --accent-color: #FB8500; /* Naranja (Botones y enfoque principal) */
+        
+        --background-color: transparent; /* Fondo del 'body' (Área fuera de la tarjeta blanca) */
+        --card-background: #ffffff; /* Fondo de tarjetas y contenido principal */
+        --text-color: #1f2937;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        transition: all 0.3s;
+    }
+
+    /* assets/css/Organización.css: Layout principal */
+    .dashboard-layout {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        min-height: 10vh;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+        #sidebar-nav {
+            transform: translateX(calc(var(--sidebar-width) * -1));
+            position: fixed;
+            z-index: 50;
+        }
+        .sidebar-open #sidebar-nav {
+            transform: translateX(0);
+        }
+    }
+
+    /* assets/css/Herramientas.css: Estilos para botones y herramientas */
+    .btn-primary {
+        background-color: var(--accent-color); /* Usar el naranja como color principal del botón */
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: background-color 0.2s;
+    }
+    .btn-primary:hover {
+        background-color: #d87000; /* Una sombra de naranja más oscura */
+    }
+    
+    /* ESTILOS AÑADIDOS PARA EL TEMA OSCURO DE LA BARRA LATERAL */
+    #sidebar-nav .nav-item {
+        color: #d1d5db; /* Texto gris claro para el fondo oscuro */
+        transition: background-color 0.2s, color 0.2s;
+    }
+    #sidebar-nav .nav-item:hover {
+        background-color: var(--primary-light); /* Azul medio al pasar el mouse */
+        color: white;
+    }
+    #sidebar-nav .nav-item.active {
+        background-color: var(--primary-light); /* Fondo de ítem activo (Azul Secundario) */
+        color: white;
+    }
+    #sidebar-nav .text-red-500 {
+        color: #f87171;
+    }
+    #sidebar-nav .hover\:bg-red-50:hover {
+        background-color: rgba(254, 226, 226, 0.1); /* Hover rojo muy suave en fondo oscuro */
+    }
+    
+    /* assets/css/Ajustes.css: Estilos específicos para la vista de ajustes */
+    .profile-setting-card {
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .tab-button {
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #6b7280; /* text-gray-500 */
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .tab-button.active {
+        color: var(--accent-color);
+        border-bottom-color: var(--accent-color);
+    }
+    .tab-button:hover:not(.active) {
+        color: #4b5563; /* text-gray-700 */
+        border-bottom-color: #e5e7eb;
+    }
+    .input-field {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+    .input-field:focus {
+        border-color: var(--accent-color);
+        outline: none;
+        box-shadow: 0 0 0 1px var(--accent-color);
+    }
+    
+    /* assets/css/Grafica.css: Estilos para la simulación de gráfica */
+    .chart-placeholder {
+        height: 250px;
+        background-color: #f3f4f6;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-weight: 500;
+        border: 1px dashed #d1d5db;
+    }
+
+    /* ESTILOS AÑADIDOS PARA LA VISTA RESERVAS */
+    .reservation-card {
+        background-color: var(--card-background);
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        transition: transform 0.2s;
+    }
+    .reservation-card:hover {
+        transform: translateY(-2px);
+    }
+    .res-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+    .res-header h4 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    .res-status {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-weight: 700;
+    }
+    .status-confirm {
+        background-color: #d1fae5; /* green-100 */
+        color: #059669; /* green-600 */
+    }
+    .status-pending {
+        background-color: #fffbeb; /* yellow-100 */
+        color: #d97706; /* yellow-700 */
+    }
+    .res-details p {
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        color: #4b5563; /* gray-600 */
+        margin-bottom: 0.5rem;
+    }
+    .res-details i {
+        margin-right: 0.5rem;
+        color: var(--accent-color);
+    }
+    .res-actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s, opacity 0.2s;
+    }
+    .btn i {
+        margin-right: 0.5rem;
+    }
+    .btn-join {
+        background-color: var(--primary-light);
+        color: white;
+    }
+    .btn-join:hover {
+        background-color: #0585a8;
+    }
+    .btn-cancel {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+    .btn-cancel:hover {
+        background-color: #e5e7eb;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+    .reservations-list-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    /* Estilos para la nueva sección de Verificación (simulando campos de carga) */
+    .upload-box {
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+    .upload-box:hover {
+        border-color: var(--accent-color);
+        background-color: #f3f4f6;
+    }
+    .upload-box i {
+        color: var(--accent-color);
+        margin-bottom: 0.5rem;
+    }
+</style>
+</head>
+
+<body class="dashboard-layout">
+
+    <aside id="sidebar-nav" class="bg-[#023047] p-6 shadow-xl w-[var(--sidebar-width)] transition-transform duration-300">
+        <div class="flex items-center space-x-3 mb-10">
+            <img src="./Img/TugoLogo.png" alt="Logo" class="rounded-full w-10 h-10 object-cover">
+                <h1 class="text-xl font-bold text-white">ClassGo!</h1>
+        </div>
+        
+        <div class="space-y-2">
+            <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Organización</h3>
+            <a href="#" data-view="resumen" class="nav-item flex items-center p-3 rounded-lg transition duration-150 active">
+                <i data-lucide="book-open-check" class="w-5 h-5 mr-3"></i>
+                <span>Resumen Académico</span>
+            </a>
+            <a href="#" data-view="reservas" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i>
+                <span>Reservas de Tutorías</span>
+            </a>
+            <a href="#" data-view="historial" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="history" class="w-5 h-5 mr-3"></i>
+                <span>Historial de Tutorías</span>
+            </a>
+            <a href="#" data-view="favoritos" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="heart" class="w-5 h-5 mr-3"></i>
+                <span>Favoritos</span>
+            </a>
+            <a href="#" data-view="promociones" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="tag" class="w-5 h-5 mr-3"></i>
+                <span>Promociones</span>
+            </a>
+        </div>
+
+        <div class="mt-8 space-y-2">
+            <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Ajustes</h3>
+            <a href="#" data-view="perfil" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                <span>Configuración de Perfil</span>
+            </a>
+            <a href="#" data-view="ayuda" class="nav-item flex items-center p-3 rounded-lg transition duration-150">
+                <i data-lucide="help-circle" class="w-5 h-5 mr-3"></i>
+                <span>Ayuda</span>
+            </a>
+        </div>
+        
+        <div class="mt-12 pt-6 border-t border-gray-700">
+            <button id="btn-desconectar-sidebar" class="flex items-center p-3 text-red-500 hover:bg-red-50 rounded-lg w-full transition duration-150">
+                <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                <span>Desconectar</span>
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-4 lg:p-8 overflow-y-auto">
+        
+        <header class="flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm">
+            <div class="flex items-center space-x-4">
+                <button id="btn-toggle-sidebar" class="lg:hidden p-2 rounded-full hover:bg-gray-100">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                    <input type="text" placeholder="Búsqueda rápida aquí (Ctrl+K)" class="pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#FB8500] text-sm w-64 md:w-80">
+                </div>
+            </div>
+            
+            <div id="user-info-area" class="relative">
+                <button id="btn-toggle-profile" class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition">
+                    <span class="text-sm font-medium hidden sm:block">Antonio Cabral</span>
+                    <img id="user-avatar" src="https://placehold.co/40x40/219EBC/ffffff?text=A" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-[#FB8500] object-cover">
+                </button>
+
+                <div id="profile-dropdown" class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl p-4 z-50 hidden transition-opacity duration-200 opacity-0 transform translate-y-2">
+                    <div class="flex items-center space-x-3 border-b pb-3 mb-3">
+                        <img src="https://placehold.co/40x40/219EBC/ffffff?text=A" alt="Avatar" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <p class="font-bold text-gray-800">Antonio Cabral</p>
+                            <p class="text-xs text-gray-500">santon*@gmail.com</p>
+                        </div>
+                    </div>
+                    <a href="#" data-view="perfil" class="dropdown-nav-item flex items-center p-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="settings" class="w-4 h-4 mr-2"></i> Configuración de perfil
+                    </a>
+                    <a href="#" data-view="reservas" class="dropdown-nav-item flex items-center p-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i> Reservas
+                    </a>
+                    <a href="#" data-view="favoritos" class="dropdown-nav-item flex items-center p-2 rounded-lg text-gray-700 hover:bg-gray-100">
+                        <i data-lucide="heart" class="w-4 h-4 mr-2"></i> Favoritos
+                    </a>
+                    <button id="btn-desconectar-dropdown" class="flex items-center p-2 mt-2 w-full text-red-500 hover:bg-red-50 rounded-lg">
+                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Desconectar
+                    </button>
+                </div>
+            </div>
+        </header>
+        <section id="dashboard-content" class="min-h-[70vh] p-6">
+    <h2 class="text-2xl font-semibold text-gray-700 mb-4" id="view-title">Resumen Académico</h2>
+    <div id="view-container">
+        </div>
+</section>
+           
+    </main>
+    
+    <div id="modal-container" class="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-3 text-gray-800" id="modal-title"></h3>
+            <p class="text-gray-600 mb-6" id="modal-message"></p>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-cancel" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg hidden">Cancelar</button>
+                <button id="modal-confirm" class="btn-primary">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ====================================================================
+        // FIREBASE SETUP (Mandatorio para el entorno Canvas)
+        // ====================================================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuración y variables globales del entorno
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-classgo-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? JSON.parse(__initial_auth_token) : null;
+
+        let db;
+        let auth;
+        let userId = null;
+        let isAuthReady = false;
+
+        if (firebaseConfig) {
+            setLogLevel('debug');
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // 1. Manejo de Autenticación
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("Usuario autenticado. UID:", userId);
+                    // Placeholder de avatar
+                    document.getElementById('user-avatar').src = `https://placehold.co/40x40/219EBC/ffffff?text=${userId.slice(0, 1).toUpperCase()}`;
+                    document.getElementById('user-info-area').title = `ID de Usuario: ${userId}`;
+                } else {
+                    userId = null;
+                    console.log("Usuario no autenticado, iniciando sesión anónima...");
+                    await signInAnonymously(auth);
+                }
+                isAuthReady = true;
+            });
+
+            // Intento de inicio de sesión con token personalizado
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                    console.error("Error al iniciar sesión con token personalizado:", error);
+                });
+            } else {
+                 // Si no hay token, onAuthStateChanged manejará el signInAnonymously
+            }
+        } else {
+            console.error("Firebase no está configurado. La funcionalidad de persistencia no estará disponible.");
+            isAuthReady = true; // Permite que la UI cargue aunque no haya DB
+        }
+
+        // ====================================================================
+        // Funciones de Ayuda (assets/js/Ajustes/Ayuda.js - Modales)
+        // ====================================================================
+
+        /**
+         * Muestra un modal personalizado (sustituto de alert/confirm).
+         * @param {string} title - Título del modal.
+         * @param {string} message - Mensaje del modal.
+         * @param {boolean} isConfirm - Si es un diálogo de confirmación.
+         * @returns {Promise<boolean>} Resuelve a true si se confirma, false si se cancela.
+         */
+        function showModal(title, message, isConfirm = false) {
+            const modalContainer = document.getElementById('modal-container');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalConfirm = document.getElementById('modal-confirm');
+            const modalCancel = document.getElementById('modal-cancel');
+
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message; // Usar innerHTML para el mensaje con negritas o etiquetas
+
+            // Restablecer el texto por defecto y la visibilidad
+            modalConfirm.textContent = "Aceptar";
+            modalCancel.classList.add('hidden');
+            
+            if (isConfirm) {
+                // Configuración especial para el modal de Autocontraseña
+                if (title === 'Cambiar Contraseña' && message.includes('automáticamente')) {
+                    modalConfirm.textContent = "Generar Automático";
+                    modalCancel.textContent = "Establecer Manualmente";
+                } else if (title === 'Eliminar Favorito') {
+                    modalConfirm.textContent = "Sí, Eliminar";
+                    modalCancel.textContent = "Cancelar";
+                } else {
+                    modalConfirm.textContent = "Aceptar";
+                    modalCancel.textContent = "Cancelar";
+                }
+                modalCancel.classList.remove('hidden');
+            } else {
+                modalConfirm.textContent = "Cerrar";
+            }
+
+            modalContainer.classList.remove('hidden');
+
+            return new Promise(resolve => {
+                const handleConfirm = () => {
+                    modalContainer.classList.add('hidden');
+                    modalConfirm.removeEventListener('click', handleConfirm);
+                    modalCancel.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+                const handleCancel = () => {
+                    modalContainer.classList.add('hidden');
+                    modalConfirm.removeEventListener('click', handleConfirm);
+                    modalCancel.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+
+                modalConfirm.addEventListener('click', handleConfirm);
+                modalCancel.addEventListener('click', handleCancel);
+            });
+        }
+
+        /**
+         * Simulación de assets/js/Ajustes/Usuario.js ('barralateral' - Botón Desconectar)
+         */
+        const Usuario = {
+            handleLogout: async () => {
+                const confirmed = await showModal('Confirmar Desconexión', '¿Estás seguro de que deseas cerrar tu sesión?', true);
+                if (confirmed) {
+                    try {
+                        if (auth) {
+                            await signOut(auth);
+                            showModal('Sesión Cerrada', 'Has cerrado tu sesión con éxito.', false);
+                            // Redirigir o recargar la página
+                            window.location.hash = '';
+                            window.location.reload(); 
+                        } else {
+                            // Si no hay auth de Firebase (entorno de prueba sin config)
+                            showModal('Desconectado', 'Desconexión simulada con éxito.', false);
+                            window.location.hash = '';
+                            navigateTo('resumen');
+                        }
+                    } catch (error) {
+                        console.error("Error al cerrar sesión:", error);
+                        showModal('Error', 'Hubo un error al cerrar la sesión.', false);
+                    }
+                }
+            }
+        };
+
+        // ====================================================================
+        // Lógica de Vistas (Simulación de assets/js/Organización/*.js)
+        // ====================================================================
+        const viewContainer = document.getElementById('view-container');
+        const viewTitle = document.getElementById('view-title');
+
+        /**
+         * Inicializa la gráfica de Chart.js
+         */
+        function renderChart() {
+            const ctx = document.getElementById('hoursChart')?.getContext('2d');
+            
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Sep', 'Oct', 'Nov', 'Dic (Actual)'],
+                    datasets: [{
+                        label: 'Horas de Tutoría',
+                        data: [5, 12, 8, 15], // Datos simulados: Horas por mes
+                        borderColor: '#FB8500', // var(--accent-color)
+                        backgroundColor: 'rgba(251, 133, 0, 0.2)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Horas'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Simulación de assets/js/Organización/Resumen académico.js
+         */
+        const ResumenAcademico = {
+            render: async () => {
+                // Función simulada para generar una alerta
+                const createAlertItem = (icon, iconColor, title, time) => `
+                    <li class="flex items-start p-3 rounded-lg hover:bg-gray-50 transition duration-100">
+                        <i data-lucide="${icon}" class="w-5 h-5 mr-3 ${iconColor} mt-1 flex-shrink-0"></i>
+                        <div>
+                            <p class="font-medium text-gray-900">${title}</p>
+                            <p class="text-xs text-gray-500">${time}</p>
+                        </div>
+                    </li>
+                `;
+                
+                // Datos simulados para el nuevo gráfico de barras (Progreso por Materia)
+                const progresoMateria = [
+                    { nombre: 'Cálculo Avanzado', progreso: 90, color: 'bg-green-500' },
+                    { nombre: 'Programación I', progreso: 75, color: 'bg-indigo-500' },
+                    { nombre: 'Física II', progreso: 50, color: 'bg-yellow-500' },
+                    { nombre: 'Estadística', progreso: 20, color: 'bg-red-500' },
+                ];
+                
+                const progresoHTML = progresoMateria.map(item => `
+                    <div class="mb-3">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">${item.nombre}</span>
+                            <span class="text-xs font-semibold ${item.progreso > 70 ? 'text-green-600' : item.progreso > 40 ? 'text-yellow-600' : 'text-red-600'}">${item.progreso}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="${item.color} h-2 rounded-full" style="width: ${item.progreso}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+
+                viewContainer.innerHTML = `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Estadísticas de Horas de Tutoría</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center mb-6">
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-3xl font-bold text-gray-800">42</p>
+                                    <p class="text-sm text-gray-500 mt-1">Tutorías Completadas</p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-3xl font-bold text-gray-800">84h</p>
+                                    <p class="text-sm text-gray-500 mt-1">Total de Horas</p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-lg border">
+                                    <p class="text-3xl font-bold text-gray-800">95%</p>
+                                    <p class="text-sm text-gray-500 mt-1">Asistencia</p>
+                                </div>
+                            </div>
+
+                            <div class="h-64 bg-gray-100/50 rounded-lg p-4 flex items-end relative">
+                                <p class="text-gray-500 absolute top-4 left-4 font-semibold text-sm">Horas / Mes</p>
+                                <canvas id="hoursChart" class="w-full h-full"></canvas>
+                                </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">Alertas Recientes</h3>
+                            <ul class="divide-y divide-gray-200">
+                                ${createAlertItem('alert-triangle', 'text-red-500', 'Vence el plazo para Proyecto de Programación I.', 'Hoy, 11:59 PM')}
+                                ${createAlertItem('bell', 'text-amber-500', 'Clase de Física II cambiada al Aula B-105.', '5 minutos atrás')}
+                                ${createAlertItem('file-text', 'text-blue-500', '3 notas actualizadas en Cálculo Avanzado.', 'Ayer')}
+                                ${createAlertItem('mail', 'text-indigo-500', 'Correo del Profesor Smith sobre el examen.', 'Hace 2 horas')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Progreso por Materia</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            ${progresoHTML}
+                        </div>
+                    </div>
+                `;
+                // Re-ejecutar Lucide para renderizar los nuevos íconos
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                // LLAMADA CLAVE: Dibuja el gráfico después de que el HTML esté en el DOM
+                renderChart(); 
+            }
+        };
+
+        // ====================================================================
+        // Lógica de Organización (ReservasTutorias.js - CORREGIDO: SE ELIMINA EL FORMULARIO DE PROGRAMACIÓN)
+        // ====================================================================
+        const allReservations = [
+            { id: 101, contact: 'Lic. Clara García', course: 'Programación I', type: 'Consulta de Proyecto', date: '2025-11-12', time: '15:00', status: 'Confirmada' },
+            { id: 102, contact: 'Lic. Carla Ruiz', course: 'Matemáticas', type: 'Tutoría de Refuerzo', date: '2025-11-15', time: '10:30', status: 'Pendiente' },
+            { id: 103, contact: 'Prof. John Smith', course: 'Cálculo Avanzado', type: 'Revisión de Examen', date: '2025-11-20', time: '17:00', status: 'Revisada' },
+        ];
+
+        const renderReservationCard = (reservation) => {
+            const statusClass = reservation.status === 'Confirmada' || reservation.status === 'Revisada' ? 'status-confirm' : 'status-pending';
+            return `
+                <div class="reservation-card">
+                    <div class="res-header">
+                        <h4>${reservation.course}</h4>
+                        <span class="res-status ${statusClass}">${reservation.status}</span>
+                    </div>
+                    <div class="res-details">
+                        <p><i class="fas fa-user icon-small"></i> ${reservation.contact}</p>
+                        <p><i class="fas fa-tag icon-small"></i> ${reservation.type}</p>
+                        <p><i class="fas fa-calendar-alt icon-small"></i> ${reservation.date} a las ${reservation.time}</p>
+                    </div>
+                    <div class="res-actions">
+                        <button class="btn btn-join" data-res-id="${reservation.id}">
+                            <i class="fas fa-video"></i> Unirse
+                        </button>
+                        <button class="btn btn-cancel" data-res-id="${reservation.id}">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        const ReservasTutorias = {
+            render: async () => {
+                // Renderiza solo la lista de reservas. Se elimina el formulario de "Programar Nueva Tutoría".
+                viewContainer.innerHTML = `
+                    <div class="reservations-container p-4">
+                        <h2 class="section-title">Mis Reservas Programadas</h2>
+                        <p class="text-gray-600 mb-6">Aquí puedes gestionar tus próximas sesiones y unirte a ellas a tiempo.</p>
+
+                        <div class="reservations-list-container" id="reservations-list-container">
+                            ${allReservations.length > 0
+                                ? allReservations.map(renderReservationCard).join('')
+                                : '<p class="text-gray-500">No tienes reservas programadas.</p>'}
+                        </div>
+                    </div>
+                `;
+
+                // Event listener delegado para los botones de Unirse/Cancelar
+                document.getElementById('reservations-list-container')?.addEventListener('click', (e) => {
+                    const button = e.target.closest('button');
+                    if (!button) return;
+                    const resId = button.getAttribute('data-res-id');
+                    const reservation = allReservations.find(r => r.id == resId);
+
+                    if (!reservation) return;
+
+                    if (button.classList.contains('btn-join')) {
+                        showModal('Unirse a la Sesión', `Simulando la conexión a la sesión de **${reservation.course}** con ${reservation.contact}.`, false);
+                    } else if (button.classList.contains('btn-cancel')) {
+                        showModal('Cancelar Reserva', `¿Estás seguro de que deseas cancelar tu reserva de **${reservation.course}**?`, true).then(confirmed => {
+                            if (confirmed) {
+                                showModal('Reserva Cancelada', 'Tu reserva ha sido cancelada con éxito (Simulación).', false);
+                                // En un entorno real, actualizaría la lista después de la cancelación
+                            }
+                        });
+                    }
+                });
+            }
+        };
+
+        /**
+         * Simulación de assets/js/Organización/HistorialTutorias.js
+         */
+        const HistorialTutorias = {
+            render: async () => {
+                const historyData = [
+                    { tutor: 'Lic. Ana Pérez', materia: 'Programación I', fecha: '2025-10-25', status: 'Completada', rating: 5 },
+                    { tutor: 'Prof. Carlos Ruíz', materia: 'Física II', fecha: '2025-09-10', status: 'Completada', rating: 4 },
+                    { tutor: 'Lic. Carla Ruiz', materia: 'Matemáticas', fecha: '2025-08-01', status: 'Cancelada', rating: null },
+                    { tutor: 'Lic. Clara García', materia: 'Cálculo Avanzado', fecha: '2025-07-20', status: 'Pendiente Revisión', rating: null },
+                ];
+                
+                // Función global para manejar el click en detalles (definida en el original)
+                window.handleHistoryDetailsClick = (tutor, materia, status) => {
+                    showModal(
+                        `Detalles de Tutoría (${tutor})`,
+                        `La sesión de **${materia}** con ${tutor} fue marcada como **${status}**. Puedes descargar el resumen de la clase en este modal (simulación).`,
+                        false
+                    );
+                };
+
+                viewContainer.innerHTML = `
+                    <div class="historiy-container p-4">
+                        <h2 class="section-title">Historial de Tutorías</h2>
+                        <p class="text-gray-600 mb-6">Revisa tus sesiones pasadas y descarga los resúmenes de clase.</p>
+                        
+                        <div class="overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-100">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tutor / Materia</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estatus</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200">
+                                    ${historyData.map((item, index) => `
+                                        <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition duration-100">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">${item.tutor}</div>
+                                                <div class="text-xs text-gray-500">${item.materia}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.fecha}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <span class="inline-flex px-2 text-xs font-semibold leading-5 rounded-full 
+                                                    ${item.status === 'Completada' ? 'bg-green-100 text-green-800' : item.status === 'Cancelada' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                                                    ${item.status}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <button onclick="handleHistoryDetailsClick('${item.tutor}', '${item.materia}', '${item.status}')" class="text-[#FB8500] hover:text-[#d87000] mr-3">
+                                                    Ver Detalles
+                                                </button>
+                                                ${item.status === 'Completada' && !item.rating ? `<button onclick="showModal('Calificar Tutor', 'Simulando la calificación de ${item.tutor} con 5 estrellas.', false)" class="text-[#219EBC] hover:text-[#0585a8]">Calificar</button>` : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+        
+        /**
+         * Simulación de assets/js/Organización/Favoritos.js
+         */
+        const Favoritos = {
+            render: async () => {
+                const favoriteTutors = [
+                    { id: 1, name: 'Lic. Clara García', subject: 'Programación I', rating: 4.8, rate: '$25/hr' },
+                    { id: 2, name: 'Prof. John Smith', subject: 'Cálculo Avanzado', rating: 5.0, rate: '$30/hr' },
+                    { id: 3, name: 'Lic. Ana Pérez', subject: 'Física II', rating: 4.5, rate: '$20/hr' },
+                ];
+                
+                const cardHTML = favoriteTutors.map(tutor => `
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex flex-col items-center text-center">
+                        <i data-lucide="user-circle" class="w-16 h-16 text-gray-500 mb-3"></i>
+                        <h4 class="text-lg font-semibold text-gray-800">${tutor.name}</h4>
+                        <p class="text-sm text-gray-600">${tutor.subject}</p>
+                        <div class="flex items-center space-x-2 mt-2">
+                            <i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i>
+                            <span class="text-sm font-medium">${tutor.rating}</span>
+                            <span class="text-sm text-gray-500">(${tutor.rate})</span>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button class="btn btn-primary text-xs" onclick="showModal('Reservar Tutoría', 'Simulando la reserva con ${tutor.name}.', false)">Reservar</button>
+                            <button class="btn bg-red-100 text-red-600 hover:bg-red-200 text-xs" onclick="showModal('Eliminar Favorito', '¿Quitar a ${tutor.name} de tus favoritos?', true)">Quitar</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                viewContainer.innerHTML = `
+                    <div class="favorites-container p-4">
+                        <h2 class="section-title">Tutores Favoritos</h2>
+                        <p class="text-gray-600 mb-6">Gestiona tus tutores preferidos para agilizar futuras reservas.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            ${cardHTML.length > 0 ? cardHTML : '<p class="text-gray-500">Aún no tienes tutores favoritos.</p>'}
+                        </div>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        };
+
+        /**
+         * Simulación de assets/js/Organización/Promociones.js
+         */
+        const Promociones = { 
+            render: async () => viewContainer.innerHTML = `
+                <div class="promotions-container p-4">
+                    <h2 class="section-title">Promociones y Ofertas</h2>
+                    <p class="text-gray-600 mb-6">Aprovecha los descuentos exclusivos para nuestros estudiantes.</p>
+
+                    <div class="space-y-4">
+                        <div class="bg-[#219EBC] text-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h4 class="text-2xl font-bold">¡50% de Descuento en tu Primera Sesión!</h4>
+                            <p class="mt-2 text-lg">Usa el código: <span class="font-bold bg-white text-[#219EBC] px-2 py-1 rounded-md inline-block">TUTORIA50</span> al pagar.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="text-xl font-semibold text-gray-800">Paquete de 10 Horas</h4>
+                            <p class="mt-1 text-gray-600">Ahorra 20% al comprar 10 horas de tutoría por adelantado. La mejor opción para un semestre completo.</p>
+                            <button class="btn-primary mt-4">Comprar Paquete</button>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h4 class="text-xl font-semibold text-gray-800">Referido Amigo</h4>
+                            <p class="mt-1 text-gray-600">Invita a un amigo y ambos obtienen 1 hora de tutoría gratis.</p>
+                            <button class="btn bg-gray-200 text-gray-800 hover:bg-gray-300 mt-4">Invitar Ahora</button>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        // ====================================================================
+        // Lógica de Ajustes (ConfigurarPerfil.js - CORREGIDO Y COMPLETO CON PESTAÑAS)
+        // ====================================================================
+
+        const DetallesPersonales = {
+            render: () => {
+                viewContainer.querySelector('#tab-content').innerHTML = `
+                    <div class="personal-details-content flex flex-col md:flex-row gap-8">
+                        <div class="image-upload-area w-full md:w-1/3 p-4">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-800">Cargar Imagen</h3>
+                            <p class="text-gray-500 mb-6 text-sm">Una imagen vale más que mil palabras.</p>
+                            <div class="current-image-container mb-4 text-center">
+                                <div class="inline-block bg-gray-200 p-8 rounded-full">
+                                    <i data-lucide="user" class="w-16 h-16 text-gray-500"></i>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary w-full text-sm" id="cambiar-foto-btn" style="background-color: var(--primary-light);">Cambiar foto</button>
+                        </div>
+
+                        <div class="details-form-area w-full md:w-2/3 p-4 border-l border-gray-100">
+                            <h3 class="text-xl font-semibold mb-4 text-gray-800">Detalles personales</h3>
+                            <p class="text-gray-500 mb-6 text-sm">Proporciona información básica para completar tu perfil.</p>
+                            <form id="personal-info-form" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Nombre</label>
+                                        <input type="text" value="Antonio" class="input-field" name="nombre" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Apellido</label>
+                                        <input type="text" value="Cabral" class="input-field" name="apellido" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Email</label>
+                                        <input type="email" value="santonios@gmail.com" class="input-field bg-gray-100" name="email" disabled/>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Phone number</label>
+                                        <input type="text" value="60037563" class="input-field" name="phone" />
+                                    </div>
+                                </div>
+                                <div class="pt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
+                                    <div class="flex items-center space-x-4">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="gender" value="male" class="form-radio text-indigo-600" checked/>
+                                            <span class="ml-2">Masculino</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="gender" value="female" class="form-radio text-indigo-600" />
+                                            <span class="ml-2">Femenino</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="gender" value="none" class="form-radio text-indigo-600" />
+                                            <span class="ml-2">Ninguno</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end pt-6">
+                                    <button type="submit" class="btn btn-primary" style="background-color: var(--accent-color);">Guardar y actualizar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                // Listener para botón de cambiar foto
+                document.getElementById('cambiar-foto-btn')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showModal('Cambiar Foto', 'Simulación: Se abriría el diálogo de carga de imagen.', false);
+                });
+            }
+        };
+
+        const ConfiguracionCuenta = {
+            render: () => {
+                viewContainer.querySelector('#tab-content').innerHTML = `
+                    <div class="security-content p-4">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Cambia tu contraseña</h3>
+                        <p class="text-gray-500 mb-6 text-sm">Puede restablecer su contraseña desde aquí. Elige la mejor contraseña.</p>
+                        <form id="password-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Nueva contraseña <span style="color: red;">*</span></label>
+                                    <input type="password" placeholder="Ingrese una nueva contraseña" class="input-field" name="new-password" required/>
+                                    <div id="new-password-error" class="text-red-500 text-sm mt-1"></div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Vuelva a escribir la nueva contraseña <span style="color: red;">*</span></label>
+                                    <input type="password" placeholder="Vuelva a escribir la nueva contraseña" class="input-field" name="confirm-password" required/>
+                                    <div id="confirm-password-error" class="text-red-500 text-sm mt-1"></div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end pt-6">
+                                <button type="submit" class="btn btn-primary" style="background-color: var(--accent-color);">Actualizar contraseña</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+            }
+        };
+        
+        // NUEVA VISTA PARA VERIFICACIÓN DE IDENTIDAD
+        const VerificacionIdentidad = {
+            render: () => {
+                viewContainer.querySelector('#tab-content').innerHTML = `
+                    <div class="verification-content p-4">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Verificación de Identidad y Documentos</h3>
+                        <p class="text-gray-500 mb-6 text-sm">Para activar todas las funciones, necesitamos verificar tu identidad y fecha de nacimiento.</p>
+                        <form id="verification-form" class="space-y-6">
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de nacimiento <span style="color: red;">*</span></label>
+                                <input type="date" placeholder="Fecha de nacimiento" class="input-field" name="birth-date" required/>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Foto personal <span style="color: red;">*</span></label>
+                                <div class="upload-box" onclick="showModal('Carga de Foto', 'Simulación: Abrir diálogo para subir Foto personal (máx. 10 MB).', false)">
+                                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto"></i>
+                                    <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
+                                    <p class="text-xs text-gray-500">jpg, jpeg, gif o png (max. 10 MB)</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Identificación emitida por el gobierno <span style="color: red;">*</span></label>
+                                <div class="upload-box" onclick="showModal('Carga de ID', 'Simulación: Abrir diálogo para subir Identificación (máx. 10 MB).', false)">
+                                    <i data-lucide="scan" class="w-8 h-8 mx-auto"></i>
+                                    <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
+                                    <p class="text-xs text-gray-500">jpg, jpeg, gif o png (max. 10 MB)</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">País <span style="color: red;">*</span></label>
+                                <select class="input-field" name="country" required>
+                                    <option value="">Seleccione un país</option>
+                                    <option value="BO">Bolivia</option>
+                                    <option value="AR">Argentina</option>
+                                    <option value="CL">Chile</option>
+                                    <option value="CO">Colombia</option>
+                                    <option value="MX">México</option>
+                                </select>
+                            </div>
+
+                            <div class="flex justify-end pt-6">
+                                <button type="submit" class="btn btn-primary" style="background-color: var(--accent-color);">Guardar y actualizar</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        };
+
+
+        const ConfigurarPerfil = {
+            render: async () => {
+                viewContainer.innerHTML = `
+                    <div class="config-profile-container p-4">
+                        <h2 class="section-title">Configurar Perfil</h2>
+
+                        <div class="bg-white rounded-xl shadow-lg p-0 border border-gray-100">
+                            <div class="tabs flex border-b border-gray-200">
+                                <button class="tab-button active" data-tab="personal">Detalles personales</button>
+                                <button class="tab-button" data-tab="security">Configuraciones de la cuenta</button>
+                                <button class="tab-button" data-tab="verification">Verificación de Identidad</button> 
+                            </div>
+
+                            <div id="tab-content" class="p-6">
+                                </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Mapeo y carga inicial con la nueva vista
+                const tabViews = { 
+                    'personal': DetallesPersonales, 
+                    'security': ConfiguracionCuenta, 
+                    'verification': VerificacionIdentidad // Nueva vista
+                };
+                
+                function loadTabContent(tabKey) {
+                    // Actualizar la clase activa de los botones de pestaña
+                    viewContainer.querySelectorAll('.tab-button').forEach(button => {
+                        button.classList.remove('active');
+                        if (button.getAttribute('data-tab') === tabKey) {
+                            button.classList.add('active');
+                        }
+                    });
+                    
+                    // Renderizar el contenido
+                    tabViews[tabKey]?.render();
+                }
+
+                function initTabs() {
+                    viewContainer.querySelectorAll('.tab-button').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const tabKey = e.currentTarget.getAttribute('data-tab');
+                            loadTabContent(tabKey);
+                        });
+                    });
+                }
+
+                // Cargar la pestaña 'personal' por defecto
+                loadTabContent('personal');
+                initTabs();
+            }
+        };
+
+
+        // ====================================================================
+        // Lógica de Vistas (Ayuda)
+        // ====================================================================
+
+        const Ayuda = { 
+            render: async () => viewContainer.innerHTML = `
+                <div class="help-container p-4">
+                    <h2 class="section-title">Centro de Ayuda y Soporte</h2>
+                    <p class="text-gray-600 mb-6">Encuentra respuestas a tus preguntas o contacta a nuestro equipo de soporte.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center"><i data-lucide="info" class="w-5 h-5 mr-2 text-primary-light"></i> Preguntas Frecuentes</h3>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="hover:text-accent-color cursor-pointer transition">¿Cómo reservo una tutoría?</li>
+                                <li class="hover:text-accent-color cursor-pointer transition">¿Cómo cancelo una sesión?</li>
+                                <li class="hover:text-accent-color cursor-pointer transition">Problemas con el pago</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center"><i data-lucide="mail" class="w-5 h-5 mr-2 text-primary-light"></i> Contactar Soporte</h3>
+                            <p class="text-gray-600 mb-4">Envíanos un mensaje y te responderemos en 24 horas.</p>
+                            <button class="btn-primary w-full text-sm">Enviar Solicitud de Soporte</button>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+
+        // ====================================================================
+        // MANEJADOR PRINCIPAL
+        // ====================================================================
+
+        // Mapeo de vistas a funciones de renderizado
+        const views = {
+            'resumen': { title: "Resumen Académico", render: async () => await ResumenAcademico.render() },
+            'reservas': { title: "Reservas de Tutorías", render: async () => await ReservasTutorias.render() },
+            'historial': { title: "Historial de Tutorías", render: async () => await HistorialTutorias.render() },
+            'favoritos': { title: "Favoritos", render: async () => await Favoritos.render() },
+            'promociones': { title: "Promociones", render: async () => await Promociones.render() },
+            'perfil': { title: "Configuración de Perfil", render: async () => await ConfigurarPerfil.render() },
+            'ayuda': { title: "Ayuda", render: async () => await Ayuda.render() },
+        };
+
+        const navigateTo = (viewKey) => {
+            const view = views[viewKey];
+            if (view) {
+                // 1. Renderizar la vista
+                viewTitle.textContent = view.title;
+                view.render();
+                
+                // 2. Actualizar la navegación de la barra lateral (Sidebar y Dropdown)
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-view') === viewKey) {
+                        item.classList.add('active');
+                    }
+                });
+                document.querySelectorAll('.dropdown-nav-item').forEach(item => {
+                    item.classList.remove('bg-gray-100');
+                    if (item.getAttribute('data-view') === viewKey) {
+                        item.classList.add('bg-gray-100');
+                    }
+                });
+
+                // 3. Ocultar el menú de móvil si está abierto
+                document.body.classList.remove('sidebar-open');
+                
+                // 4. Actualizar el historial para permitir la navegación con flechas
+                history.pushState(null, null, `#${viewKey}`);
+            } else {
+                console.error(`Vista no encontrada: ${viewKey}`);
+                navigateTo('resumen'); // Fallback
+            }
+        };
+
+        const handleHashChange = () => {
+            const viewKey = window.location.hash.substring(1) || 'resumen';
+            navigateTo(viewKey);
+        };
+
+        // Escucha cambios en el hash (navegación)
+        window.addEventListener('hashchange', handleHashChange);
+        
+        // Listener para el envío de formularios de Ajustes (Delegación global)
+        document.addEventListener('submit', function(e) {
+            if (e.target.id === 'password-form') {
+                e.preventDefault();
+                const newPass = e.target.elements['new-password'].value;
+                const confirmPass = e.target.elements['confirm-password'].value;
+                
+                const newPassError = document.getElementById('new-password-error');
+                const confirmPassError = document.getElementById('confirm-password-error');
+                
+                newPassError.textContent = '';
+                confirmPassError.textContent = '';
+
+                let isValid = true;
+                if (!newPass) {
+                    newPassError.textContent = 'El campo es obligatorio.';
+                    isValid = false;
+                }
+                if (newPass !== confirmPass) {
+                    confirmPassError.textContent = 'Las contraseñas no coinciden.';
+                    isValid = false;
+                }
+
+                if (isValid) {
+                    showModal('Contraseña Actualizada', 'Tu contraseña ha sido actualizada con éxito.', false);
+                    e.target.reset();
+                }
+            } else if (e.target.id === 'personal-info-form') {
+                e.preventDefault();
+                showModal('Datos Guardados', 'Tu información personal ha sido actualizada con éxito.', false);
+            } else if (e.target.id === 'verification-form') { // Nuevo listener para el formulario de Verificación
+                e.preventDefault();
+                showModal('Documentos Enviados', 'Tus documentos han sido enviados para verificación. Recibirás una notificación en 24-48 horas.', false);
+            }
+        });
+
+
+        // Inicialización al cargar el DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Listener para los elementos de navegación (barra lateral y dropdown)
+            document.querySelectorAll('a[data-view]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const viewKey = e.currentTarget.getAttribute('data-view');
+                    navigateTo(viewKey);
+                });
+            });
+
+            // Toggle del sidebar para móvil
+            document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-open');
+            });
+            
+            // Toggle del menú de perfil
+            const profileDropdown = document.getElementById('profile-dropdown');
+            const btnToggleProfile = document.getElementById('btn-toggle-profile');
+
+            btnToggleProfile.addEventListener('click', () => {
+                const isHidden = profileDropdown.classList.toggle('hidden');
+                if (!isHidden) {
+                    // Muestra el dropdown con animación
+                    setTimeout(() => {
+                        profileDropdown.classList.remove('opacity-0', 'translate-y-2');
+                    }, 10);
+                } else {
+                    // Oculta el dropdown con animación
+                    profileDropdown.classList.add('opacity-0', 'translate-y-2');
+                }
+            });
+
+            // Manejo de Desconexión (simulación de assets/js/Ajustes/Usuario.js)
+            document.getElementById('btn-desconectar-sidebar').addEventListener('click', Usuario.handleLogout);
+            document.getElementById('btn-desconectar-dropdown').addEventListener('click', Usuario.handleLogout);
+            
+            // Inicia en la vista correcta basada en el hash o en Resumen Académico por defecto
+            handleHashChange();
+
+            // Renderiza los íconos de Lucide en toda la página
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+        
+    </script>
+</body>
+</html>
