@@ -243,6 +243,22 @@
         color: var(--accent-color);
         margin-bottom: 0.5rem;
     }
+    .upload-box.drag-over {
+        border-color: var(--primary-light);
+        background-color: #e0f2fe; /* Light blue background when dragging over */
+        border-width: 2px;
+        border-style: dashed;
+    }
+    .uploaded-file-info {
+        margin-top: 1rem;
+        padding: 0.5rem;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 0.375rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 </style>
 </head>
 
@@ -866,6 +882,30 @@
         // ====================================================================
 
         const DetallesPersonales = {
+            // Nueva función para manejar el archivo seleccionado y actualizar la UI
+            handleProfileFileSelect: (file) => {
+                if (!file) return;
+
+                const maxFileSize = 5 * 1024 * 1024; // 5 MB
+                if (file.size > maxFileSize) {
+                    showModal('Error de Archivo', 'El archivo es demasiado grande. El tamaño máximo permitido es 5 MB.', false);
+                    return;
+                }
+                
+                // 1. Mostrar el nombre del archivo en un modal (Simulación de carga)
+                showModal('Foto Seleccionada', `**${file.name}** ha sido seleccionada. Si quieres verla en el recuadro, haz clic en 'Guardar y actualizar'.`, false).then(() => {
+                    // 2. Simular la previsualización de la imagen
+                    const currentImageContainer = document.querySelector('.current-image-container');
+                    const fileReader = new FileReader();
+
+                    fileReader.onload = (e) => {
+                        currentImageContainer.innerHTML = `<img src="${e.target.result}" alt="Foto de perfil" class="w-24 h-24 rounded-full object-cover border-2 border-[#FB8500] mx-auto" id="uploaded-profile-img" />`;
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    };
+                    fileReader.readAsDataURL(file);
+                });
+            },
+
             render: () => {
                 viewContainer.querySelector('#tab-content').innerHTML = `
                     <div class="personal-details-content flex flex-col md:flex-row gap-8">
@@ -877,6 +917,9 @@
                                     <i data-lucide="user" class="w-16 h-16 text-gray-500"></i>
                                 </div>
                             </div>
+                            
+                            <input type="file" id="profile-upload-input" accept="image/*" class="hidden" />
+
                             <button class="btn btn-primary w-full text-sm" id="cambiar-foto-btn" style="background-color: var(--primary-light);">Cambiar foto</button>
                         </div>
 
@@ -930,10 +973,20 @@
                     lucide.createIcons();
                 }
                 
-                // Listener para botón de cambiar foto
-                document.getElementById('cambiar-foto-btn')?.addEventListener('click', (e) => {
+                // Listener para el botón de cambiar foto
+                const btn = document.getElementById('cambiar-foto-btn');
+                const input = document.getElementById('profile-upload-input');
+                
+                btn?.addEventListener('click', (e) => {
                     e.preventDefault();
-                    showModal('Cambiar Foto', 'Simulación: Se abriría el diálogo de carga de imagen.', false);
+                    // Simular el clic en el input de archivo
+                    input.click();
+                });
+                
+                // Listener para cuando se selecciona un archivo
+                input?.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    DetallesPersonales.handleProfileFileSelect(file);
                 });
             }
         };
@@ -968,7 +1021,149 @@
         
         // NUEVA VISTA PARA VERIFICACIÓN DE IDENTIDAD
         const VerificacionIdentidad = {
+            // Función auxiliar para manejar la selección o arrastre de archivos
+            handleFileSelect: (file, boxElement) => {
+                if (!file) return;
+
+                const maxFileSize = 10 * 1024 * 1024; // 10 MB
+                if (file.size > maxFileSize) {
+                    showModal('Error de Archivo', 'El archivo es demasiado grande. El tamaño máximo permitido es 10 MB.', false);
+                    return;
+                }
+                
+                // Actualiza la UI para mostrar el nombre del archivo
+                const infoDiv = boxElement.querySelector('.uploaded-file-info');
+                const boxText = boxElement.querySelector('.box-text');
+
+                if (infoDiv) infoDiv.remove();
+
+                boxText.innerHTML = `<p class="text-sm font-medium text-green-700">Archivo seleccionado:</p><p class="text-xs text-green-600 font-bold">${file.name}</p>`;
+                
+                // Simulamos la carga mostrando un mensaje de éxito
+                showModal('Archivo Cargado', `**${file.name}** ha sido seleccionado correctamente. Presione 'Guardar y actualizar' para enviar.`, false);
+            },
+
+            // Función auxiliar para configurar el Drag & Drop en un recuadro
+            setupDragDrop: (boxId, inputId) => {
+                const box = document.getElementById(boxId);
+                const input = document.getElementById(inputId);
+
+                if (!box || !input) return;
+
+                // 1. Abrir diálogo de archivo al hacer clic
+                box.addEventListener('click', () => {
+                    input.click();
+                });
+
+                // 2. Manejar la selección de archivo desde el diálogo
+                input.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    VerificacionIdentidad.handleFileSelect(file, box);
+                });
+
+                // 3. Manejar Drag Over (Visual)
+                box.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    box.classList.add('drag-over');
+                });
+                
+                // 4. Manejar Drag Leave (Visual)
+                box.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    box.classList.remove('drag-over');
+                });
+
+                // 5. Manejar Drop (Carga de archivo)
+                box.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    box.classList.remove('drag-over');
+                    const file = e.dataTransfer.files[0];
+                    VerificacionIdentidad.handleFileSelect(file, box);
+                });
+
+                // Evitar el comportamiento de arrastrar y soltar predeterminado en toda la ventana
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    document.body.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                    }, false);
+                });
+            },
+
             render: () => {
+                
+                // Lista completa de países para el selector (solicitud del usuario)
+                const countries = [
+                    { code: "AF", name: "Afganistán" }, { code: "AL", name: "Albania" }, { code: "DZ", name: "Argelia" },
+                    { code: "AD", name: "Andorra" }, { code: "AO", name: "Angola" }, { code: "AG", name: "Antigua y Barbuda" },
+                    { code: "AR", name: "Argentina" }, { code: "AM", name: "Armenia" }, { code: "AU", name: "Australia" },
+                    { code: "AT", name: "Austria" }, { code: "AZ", name: "Azerbaiyán" }, { code: "BS", name: "Bahamas" },
+                    { code: "BH", name: "Baréin" }, { code: "BD", name: "Bangladés" }, { code: "BB", name: "Barbados" },
+                    { code: "BY", name: "Bielorrusia" }, { code: "BE", name: "Bélgica" }, { code: "BZ", name: "Belice" },
+                    { code: "BJ", name: "Benín" }, { code: "BT", name: "Bután" }, { code: "BO", name: "Bolivia" },
+                    { code: "BA", name: "Bosnia y Herzegovina" }, { code: "BW", name: "Botsuana" }, { code: "BR", name: "Brasil" },
+                    { code: "BN", name: "Brunéi" }, { code: "BG", name: "Bulgaria" }, { code: "BF", name: "Burkina Faso" },
+                    { code: "BI", name: "Burundi" }, { code: "CV", name: "Cabo Verde" }, { code: "KH", name: "Camboya" },
+                    { code: "CM", name: "Camerún" }, { code: "CA", name: "Canadá" }, { code: "CF", name: "República Centroafricana" },
+                    { code: "TD", name: "Chad" }, { code: "CL", name: "Chile" }, { code: "CN", name: "China" },
+                    { code: "CO", name: "Colombia" }, { code: "KM", name: "Comoras" }, { code: "CG", name: "Congo" },
+                    { code: "CD", name: "República Democrática del Congo" }, { code: "CR", name: "Costa Rica" }, { code: "HR", name: "Croacia" },
+                    { code: "CU", name: "Cuba" }, { code: "CY", name: "Chipre" }, { code: "CZ", name: "República Checa" },
+                    { code: "DK", name: "Dinamarca" }, { code: "DJ", name: "Yibuti" }, { code: "DM", name: "Dominica" },
+                    { code: "DO", name: "República Dominicana" }, { code: "EC", name: "Ecuador" }, { code: "EG", name: "Egipto" },
+                    { code: "SV", name: "El Salvador" }, { code: "GQ", name: "Guinea Ecuatorial" }, { code: "ER", name: "Eritrea" },
+                    { code: "EE", name: "Estonia" }, { code: "ET", name: "Etiopía" }, { code: "FJ", name: "Fiyi" },
+                    { code: "FI", name: "Finlandia" }, { code: "FR", name: "Francia" }, { code: "GA", name: "Gabón" },
+                    { code: "GM", name: "Gambia" }, { code: "GE", name: "Georgia" }, { code: "DE", name: "Alemania" },
+                    { code: "GH", name: "Ghana" }, { code: "GR", name: "Grecia" }, { code: "GD", name: "Granada" },
+                    { code: "GT", name: "Guatemala" }, { code: "GN", name: "Guinea" }, { code: "GW", name: "Guinea-Bisáu" },
+                    { code: "GY", name: "Guyana" }, { code: "HT", name: "Haití" }, { code: "HN", name: "Honduras" },
+                    { code: "HU", name: "Hungría" }, { code: "IS", name: "Islandia" }, { code: "IN", name: "India" },
+                    { code: "ID", name: "Indonesia" }, { code: "IR", name: "Irán" }, { code: "IQ", name: "Irak" },
+                    { code: "IE", name: "Irlanda" }, { code: "IL", name: "Israel" }, { code: "IT", name: "Italia" },
+                    { code: "JM", name: "Jamaica" }, { code: "JP", name: "Japón" }, { code: "JO", name: "Jordania" },
+                    { code: "KZ", name: "Kazajistán" }, { code: "KE", name: "Kenia" }, { code: "KI", name: "Kiribati" },
+                    { code: "KP", name: "Corea del Norte" }, { code: "KR", name: "Corea del Sur" }, { code: "KW", name: "Kuwait" },
+                    { code: "KG", name: "Kirguistán" }, { code: "LA", name: "Laos" }, { code: "LV", name: "Letonia" },
+                    { code: "LB", name: "Líbano" }, { code: "LS", name: "Lesoto" }, { code: "LR", name: "Liberia" },
+                    { code: "LY", name: "Libia" }, { code: "LI", name: "Liechtenstein" }, { code: "LT", name: "Lituania" },
+                    { code: "LU", name: "Luxemburgo" }, { code: "MG", name: "Madagascar" }, { code: "MW", name: "Malaui" },
+                    { code: "MY", name: "Malasia" }, { code: "MV", name: "Maldivas" }, { code: "ML", name: "Malí" },
+                    { code: "MT", name: "Malta" }, { code: "MH", name: "Islas Marshall" }, { code: "MR", name: "Mauritania" },
+                    { code: "MU", name: "Mauricio" }, { code: "MX", name: "México" }, { code: "FM", name: "Micronesia" },
+                    { code: "MD", name: "Moldavia" }, { code: "MC", name: "Mónaco" }, { code: "MN", name: "Mongolia" },
+                    { code: "ME", name: "Montenegro" }, { code: "MA", name: "Marruecos" }, { code: "MZ", name: "Mozambique" },
+                    { code: "MM", name: "Myanmar (Birmania)" }, { code: "NA", name: "Namibia" }, { code: "NR", name: "Nauru" },
+                    { code: "NP", name: "Nepal" }, { code: "NL", name: "Países Bajos" }, { code: "NZ", name: "Nueva Zelanda" },
+                    { code: "NI", name: "Nicaragua" }, { code: "NE", name: "Níger" }, { code: "NG", name: "Nigeria" },
+                    { code: "MK", name: "Macedonia del Norte" }, { code: "NO", name: "Noruega" }, { code: "OM", name: "Omán" },
+                    { code: "PK", name: "Pakistán" }, { code: "PW", name: "Palaos" }, { code: "PA", name: "Panamá" },
+                    { code: "PG", name: "Papúa Nueva Guinea" }, { code: "PY", name: "Paraguay" }, { code: "PE", name: "Perú" },
+                    { code: "PH", name: "Filipinas" }, { code: "PL", name: "Polonia" }, { code: "PT", name: "Portugal" },
+                    { code: "QA", name: "Catar" }, { code: "RO", name: "Rumania" }, { code: "RU", name: "Rusia" },
+                    { code: "RW", name: "Ruanda" }, { code: "KN", name: "San Cristóbal y Nieves" }, { code: "LC", name: "Santa Lucía" },
+                    { code: "VC", name: "San Vicente y las Granadas" }, { code: "WS", name: "Samoa" }, { code: "SM", name: "San Marino" },
+                    { code: "ST", name: "Santo Tomé y Príncipe" }, { code: "SA", name: "Arabia Saudita" }, { code: "SN", name: "Senegal" },
+                    { code: "RS", name: "Serbia" }, { code: "SC", name: "Seychelles" }, { code: "SL", name: "Sierra Leona" },
+                    { code: "SG", name: "Singapur" }, { code: "SK", name: "Eslovaquia" }, { code: "SI", name: "Eslovenia" },
+                    { code: "SB", name: "Islas Salomón" }, { code: "SO", name: "Somalia" }, { code: "ZA", name: "Sudáfrica" },
+                    { code: "SS", name: "Sudán del Sur" }, { code: "ES", name: "España" }, { code: "LK", name: "Sri Lanka" },
+                    { code: "SD", name: "Sudán" }, { code: "SR", name: "Surinam" }, { code: "SE", name: "Suecia" },
+                    { code: "CH", name: "Suiza" }, { code: "SY", name: "Siria" }, { code: "TW", name: "Taiwán" },
+                    { code: "TJ", name: "Tayikistán" }, { code: "TZ", name: "Tanzania" }, { code: "TH", name: "Tailandia" },
+                    { code: "TL", name: "Timor Oriental" }, { code: "TG", name: "Togo" }, { code: "TO", name: "Tonga" },
+                    { code: "TT", name: "Trinidad y Tobago" }, { code: "TN", name: "Túnez" }, { code: "TR", name: "Turquía" },
+                    { code: "TM", name: "Turkmenistán" }, { code: "TV", name: "Tuvalu" }, { code: "UG", name: "Uganda" },
+                    { code: "UA", name: "Ucrania" }, { code: "AE", name: "Emiratos Árabes Unidos" }, { code: "GB", name: "Reino Unido" },
+                    { code: "US", name: "Estados Unidos" }, { code: "UY", name: "Uruguay" }, { code: "UZ", name: "Uzbekistán" },
+                    { code: "VU", name: "Vanuatu" }, { code: "VE", name: "Venezuela" }, { code: "VN", name: "Vietnam" },
+                    { code: "YE", name: "Yemen" }, { code: "ZM", name: "Zambia" }, { code: "ZW", name: "Zimbabue" }
+                ].sort((a, b) => a.name.localeCompare(b.name));
+                
+                const countryOptions = countries.map(country => 
+                    `<option value="${country.code}">${country.name}</option>`
+                ).join('');
+
+
                 viewContainer.querySelector('#tab-content').innerHTML = `
                     <div class="verification-content p-4">
                         <h3 class="text-xl font-semibold mb-4 text-gray-800">Verificación de Identidad y Documentos</h3>
@@ -982,19 +1177,25 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Foto personal <span style="color: red;">*</span></label>
-                                <div class="upload-box" onclick="showModal('Carga de Foto', 'Simulación: Abrir diálogo para subir Foto personal (máx. 10 MB).', false)">
+                                <input type="file" id="photo-upload-input" accept="image/*" class="hidden" />
+                                <div class="upload-box" id="photo-upload-box" >
                                     <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto"></i>
-                                    <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
-                                    <p class="text-xs text-gray-500">jpg, jpeg, gif o png (max. 10 MB)</p>
+                                    <div class="box-text">
+                                        <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
+                                        <p class="text-xs text-gray-500">jpg, jpeg, gif o png (max. 10 MB)</p>
+                                    </div>
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Identificación emitida por el gobierno <span style="color: red;">*</span></label>
-                                <div class="upload-box" onclick="showModal('Carga de ID', 'Simulación: Abrir diálogo para subir Identificación (máx. 10 MB).', false)">
+                                <input type="file" id="id-upload-input" accept="image/*, application/pdf" class="hidden" />
+                                <div class="upload-box" id="id-upload-box" >
                                     <i data-lucide="scan" class="w-8 h-8 mx-auto"></i>
-                                    <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
-                                    <p class="text-xs text-gray-500">jpg, jpeg, gif o png (max. 10 MB)</p>
+                                    <div class="box-text">
+                                        <p class="text-sm font-medium text-gray-700">Suelte un archivo aquí o haga clic aquí subir</p>
+                                        <p class="text-xs text-gray-500">jpg, jpeg, png o pdf (max. 10 MB)</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1002,11 +1203,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">País <span style="color: red;">*</span></label>
                                 <select class="input-field" name="country" required>
                                     <option value="">Seleccione un país</option>
-                                    <option value="BO">Bolivia</option>
-                                    <option value="AR">Argentina</option>
-                                    <option value="CL">Chile</option>
-                                    <option value="CO">Colombia</option>
-                                    <option value="MX">México</option>
+                                    ${countryOptions}
                                 </select>
                             </div>
 
@@ -1019,6 +1216,10 @@
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+
+                // Configurar los eventos de arrastrar y soltar/click
+                VerificacionIdentidad.setupDragDrop('photo-upload-box', 'photo-upload-input');
+                VerificacionIdentidad.setupDragDrop('id-upload-box', 'id-upload-input');
             }
         };
 
